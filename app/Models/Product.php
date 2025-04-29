@@ -2,11 +2,18 @@
 
 namespace App\Models;
 
+use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+#[HasFactory(ProductFactory::class)]
 class Product extends Model
 {
-    /** @use HasFactory<\Database\Factories\ProductFactory> */
+
     use HasFactory;
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
 }
