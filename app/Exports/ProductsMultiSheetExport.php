@@ -1,14 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Exports;
 
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 
 class ProductsMultiSheetExport implements WithMultipleSheets
 {
-    public function __construct(protected int $totalCount)
-    {
-    }
+    public function __construct(protected int $totalCount) {}
 
     public function sheets(): array
     {

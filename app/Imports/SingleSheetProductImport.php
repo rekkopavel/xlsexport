@@ -1,17 +1,26 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Imports;
 
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Imports\HeadingRowFormatter;
 
-class SingleSheetProductImport implements ToCollection, WithHeadingRow, WithChunkReading
+class SingleSheetProductImport implements ToCollection, WithChunkReading, WithHeadingRow
 {
+    private const REQUIRED_COLUMNS = ['Название', 'SKU', 'Цена', 'Остаток'];
+
+    private const CHUNK_SIZE = 500;
+
+    private const DEFAULT_CATEGORY = 'Без категории';
+
     public function __construct()
     {
         HeadingRowFormatter::default('none');
@@ -19,39 +28,82 @@ class SingleSheetProductImport implements ToCollection, WithHeadingRow, WithChun
 
     public function collection(Collection $rows): void
     {
-        $productsToInsert = [];
+        $validRows = $this->validateRows($rows);
 
-        foreach ($rows as $row) {
+        if ($validRows->isEmpty()) {
+            Log::warning('No valid rows found for import');
 
-
-            $category = Category::firstOrCreate(['name' => $row['Категория'] ?? 'Без категории']);
-
-            $productsToInsert[] = [
-                'name' => $row['Название'],
-                'sku' => $row['SKU'],
-                'price' => $this->parsePrice($row['Цена']),
-                'stock' => (int)$row['Остаток'],
-                'description' => $row['Описание'] ?? null,
-                'category_id' => $category->id,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
+            return;
         }
 
-        if (!empty($productsToInsert)) {
+        $productsToInsert = $this->prepareProductsData($validRows);
+
+        try {
             Product::insert($productsToInsert);
+        } catch (\Exception $e) {
+            Log::error('Product import failed: '.$e->getMessage());
+            throw $e;
         }
     }
 
     public function chunkSize(): int
     {
-        return 500; // можно изменить при необходимости
+        return self::CHUNK_SIZE;
     }
 
-    protected function parsePrice(string $rawPrice): int
+    private function validateRows(Collection $rows): Collection
     {
-        // Убираем пробелы и заменяем запятую на точку, если есть
-        $normalized = str_replace([' ', ','], ['', '.'], $rawPrice);
-        return (int)round(floatval($normalized) * 100);
+        return $rows->filter(function ($row) {
+            foreach (self::REQUIRED_COLUMNS as $column) {
+                if (! isset($row[$column])) {
+                    Log::warning("Missing required column: {$column} in row");
+
+                    return false;
+                }
+            }
+
+            return true;
+        });
+    }
+
+    private function prepareProductsData(Collection $rows): array
+    {
+        $now = now();
+        $categoryCache = [];
+
+        return $rows->map(function ($row) use ($now, &$categoryCache) {
+            $categoryName = $row['Категория'] ?? self::DEFAULT_CATEGORY;
+
+            if (! isset($categoryCache[$categoryName])) {
+                $categoryCache[$categoryName] = Category::firstOrCreate(['name' => $categoryName]);
+            }
+
+            return [
+                'name' => $this->cleanString($row['Название']),
+                'sku' => $this->cleanString($row['SKU']),
+                'price' => $this->parsePrice($row['Цена']),
+                'stock' => (int) $row['Остаток'],
+                'description' => $this->cleanString($row['Описание'] ?? null),
+                'category_id' => $categoryCache[$categoryName]->id,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        })->all();
+    }
+
+    private function parsePrice(string $rawPrice): int
+    {
+        $normalized = str_replace([' ', ','], ['', '.'], trim($rawPrice));
+
+        return (int) round((float) $normalized * 100);
+    }
+
+    private function cleanString(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        return trim(strip_tags($value));
     }
 }

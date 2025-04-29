@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Exports;
 
 use App\Models\Product;
-
 use Illuminate\Database\Eloquent\Builder;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -18,8 +17,7 @@ class ProductsExport implements FromQuery, WithHeadings, WithMapping, WithTitle
         protected int $count,
         protected int $offset = 0,
         protected int $sheetNumber = 1
-    ) {
-    }
+    ) {}
 
     public function query(): Builder
     {
@@ -57,7 +55,7 @@ class ProductsExport implements FromQuery, WithHeadings, WithMapping, WithTitle
 
     public function title(): string
     {
-        return "Товары " . (($this->offset + 1) . '–' . ($this->offset + $this->count));
+        // Имена листов
+        return 'Товары '.(($this->offset + 1).'–'.($this->offset + $this->count));
     }
 }
-

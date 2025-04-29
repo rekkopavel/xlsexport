@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('category_id')->constrained()->nullOnDelete();
             $table->string('name');
-            $table->string('sku')->unique();
+            $table->string('sku');
             $table->integer('price');
             $table->integer('stock');
             $table->text('description')->nullable();
