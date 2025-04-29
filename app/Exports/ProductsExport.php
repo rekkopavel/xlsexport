@@ -7,16 +7,23 @@ use Illuminate\Database\Eloquent\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithTitle;
 
-class ProductsExport implements FromCollection, WithHeadings, WithMapping
+class ProductsExport implements FromCollection, WithHeadings, WithMapping, WithTitle
 {
-    public function __construct(protected int $count)
-    {
+    public function __construct(
+        protected int $count,
+        protected int $offset = 0,
+        protected int $sheetNumber = 1
+    ) {
     }
 
     public function collection(): Collection
     {
-        return Product::with('category')->limit($this->count)->get();
+        return Product::with('category')
+            ->offset($this->offset)
+            ->limit($this->count)
+            ->get();
     }
 
     public function headings(): array
@@ -44,5 +51,9 @@ class ProductsExport implements FromCollection, WithHeadings, WithMapping
             $product->description,
         ];
     }
-}
 
+    public function title(): string
+    {
+        return "Товары " . (($this->offset + 1) . '–' . ($this->offset + $this->count));
+    }
+}

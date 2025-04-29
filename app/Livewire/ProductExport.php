@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Exports\ProductsExport;
+use App\Exports\ProductsMultiSheetExport;
 use Livewire\Component;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -14,9 +15,9 @@ class ProductExport extends Component
     public function export()
     {
         $filename = 'products_' . now()->timestamp . '.xlsx';
-        Excel::store(new ProductsExport($this->count), $filename, 'public');
+        return Excel::download(new ProductsMultiSheetExport($this->count), $filename);
 
-        return response()->download(storage_path("app/public/{$filename}"))->deleteFileAfterSend(true);
+       // return response()->download(storage_path("app/public/{$filename}"))->deleteFileAfterSend(true);
     }
     public function render()
     {
