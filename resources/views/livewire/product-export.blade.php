@@ -8,6 +8,17 @@
         @endfor
     </select>
 
-    <div><button wire:click="export">Экспортировать в Excel</button></div>
-    <div> <button wire:click="import">Импортировать из Excel</button></div>
+    <div>
+        <button wire:click="export">Экспортировать в Excel</button>
+    </div>
+    <div>
+        <form wire:submit="import" class="space-y-4">
+            <input type="file" wire:model="file" required>
+            @error('file') <span class="text-red-600">{{ $message }}</span> @enderror
+
+            <button type="submit">Импортировать из Excel</button>
+        </form>
+
+    </div>
+
 </div>
