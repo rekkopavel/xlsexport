@@ -21,7 +21,7 @@ class ProductFactory extends Factory
             'category_id' => Category::inRandomOrder()->first()->id,
             'name' => fake()->words(3, true),
             'sku' => fake()->unique()->bothify('SKU-#######'),
-            'price' => fake()->numberBetween(10, 500000000),
+            'price' => fake()->numberBetween(100, 500000000),
             'stock' => fake()->numberBetween(0, 100),
             'description' => fake()->paragraph(),
         ];
